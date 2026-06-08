@@ -1,0 +1,57 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+*.egg
+dist/
+build/
+.venv/
+venv/
+*.whl
+
+# Environment
+.env
+*.env.local
+
+# Database (encrypted vault)
+data/personality_vault.db
+data/*.db
+data/*.db-journal
+
+# Models (large files)
+models/*.pt
+models/*.pth
+models/*.bin
+models/*.safetensors
+
+# Datasets
+data/openpsychometrics/
+data/*.csv
+data/*.zip
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Logs
+*.log
+logs/
+
+# Docker
+.docker/
+
+# Streamlit
+.streamlit/secrets.toml
+
+# CommandCode
+.commandcode/
+
+# Notebooks
+*.ipynb_checkpoints/

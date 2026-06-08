@@ -1,0 +1,82 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint-and-typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install ruff mypy types-protobuf
+      - name: Ruff lint
+        run: ruff check src/ config/ scripts/
+      - name: Mypy type check
+        run: mypy src/ config/ scripts/ --ignore-missing-imports || true
+
+  import-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install core deps
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Generate proto stubs
+        run: python -m grpc_tools.protoc -Iproto --python_out=proto --grpc_python_out=proto avatar.proto a2a_session.proto
+      - name: Verify imports
+        run: |
+          python -c "
+          from config.settings import settings
+          from config.llm_settings import resolve_provider, get_available_providers
+          from proto.avatar_pb2 import AvatarCapsule
+          from proto.a2a_session_pb2 import InitiateRequest
+          from proto.a2a_session_pb2_grpc import A2ADatingServiceServicer
+          from src.vault.schema import get_schema
+          from src.vault.manager import PersonalityVaultManager
+          from src.personality.extractor import PersonalityExtractor
+          from src.personality.siamese_model import SiamesePersonalityModel, ContrastiveLoss, TripletLoss
+          from src.personality.updater import PersonalityUpdater
+          from src.personality.data_loader import PersonalityPairDataset
+          from src.personality.trainer import SiameseTrainer
+          from src.avatar.capsule_builder import AvatarCapsuleBuilder
+          from src.ingestion.data_client import DataIngestionClient
+          from src.ingestion.async_client import AsyncDataIngestionClient
+          from src.a2a.slm_reasoner import LocalSLMReasoner
+          from src.a2a.debate_topics import DEBATE_TOPICS, get_all_topic_ids
+          from src.a2a.session_manager import A2ASessionManager
+          from src.a2a.server import serve
+          from src.a2a.async_server import serve_async
+          from src.a2a.topic_selector import DynamicTopicSelector
+          from src.a2a.simulate import run_simulation
+          from src.matching.scorer import CompatibilityScorer
+          from src.consent.gate import ConsentGate
+          from src.reports.generator import ReportGenerator, validate_config
+          from src.knowledge.crawler import KnowledgeCrawler, CRAWL_TARGETS
+          from src.knowledge.summarizer import PaperSummarizer
+          from src.knowledge.updater import KnowledgeBrainUpdater
+          from src.knowledge.notifications import notification_service
+          print(f'All imports verified: {len(DEBATE_TOPICS)} topics, {len(CRAWL_TARGETS)} sources')
+          "
+
+  docker-build:
+    runs-on: ubuntu-latest
+    needs: [lint-and-typecheck, import-check]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build Docker image
+        run: docker build -t soul-avatar-matcher:ci .
+      - name: Verify image
+        run: docker run --rm soul-avatar-matcher:ci python -c "from config.settings import settings; print('Docker OK:', settings.PROJECT_ROOT)"

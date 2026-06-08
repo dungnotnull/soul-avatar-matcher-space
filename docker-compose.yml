@@ -1,0 +1,80 @@
+version: "3.9"
+
+services:
+  soul-avatar-matcher:
+    build: .
+    image: soul-avatar-matcher:latest
+    container_name: soul-avatar-matcher
+    ports:
+      - "50051:50051"
+      - "8501:8501"
+    volumes:
+      - soul_avatar_data:/app/data
+      - soul_avatar_models:/app/models
+      - ./SECOND-KNOWLEDGE-BRAIN.md:/app/SECOND-KNOWLEDGE-BRAIN.md:ro
+    environment:
+      - SOUL_OLLAMA_BASE_URL=http://ollama:11434
+      - SOUL_GRPC_HOST=[::]:50051
+      - SOUL_LOG_LEVEL=INFO
+    env_file:
+      - .env
+    restart: unless-stopped
+    networks:
+      - soul_network
+    depends_on:
+      ollama:
+        condition: service_started
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: soul-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    environment:
+      - OLLAMA_KEEP_ALIVE=24h
+    restart: unless-stopped
+    networks:
+      - soul_network
+
+  dashboard:
+    build: .
+    image: soul-avatar-matcher:latest
+    container_name: soul-dashboard
+    command: ["dashboard"]
+    ports:
+      - "8501:8501"
+    volumes:
+      - soul_avatar_data:/app/data
+    environment:
+      - SOUL_OLLAMA_BASE_URL=http://ollama:11434
+    restart: unless-stopped
+    networks:
+      - soul_network
+    depends_on:
+      - ollama
+      - soul-avatar-matcher
+
+  cron-knowledge:
+    build: .
+    image: soul-avatar-matcher:latest
+    container_name: soul-cron-knowledge
+    entrypoint: ["python", "scripts/weekly_knowledge_update.py"]
+    volumes:
+      - soul_avatar_data:/app/data
+      - ./SECOND-KNOWLEDGE-BRAIN.md:/app/SECOND-KNOWLEDGE-BRAIN.md
+    environment:
+      - SOUL_OLLAMA_BASE_URL=http://ollama:11434
+    restart: "no"
+    networks:
+      - soul_network
+
+volumes:
+  soul_avatar_data:
+  soul_avatar_models:
+  ollama_data:
+
+networks:
+  soul_network:
+    driver: bridge

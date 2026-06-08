@@ -1,0 +1,54 @@
+syntax = "proto3";
+
+package avatar;
+
+message BigFiveScores {
+    double openness = 1;
+    double conscientiousness = 2;
+    double extraversion = 3;
+    double agreeableness = 4;
+    double neuroticism = 5;
+}
+
+message EmotionDistribution {
+    double joy = 1;
+    double sadness = 2;
+    double anger = 3;
+    double fear = 4;
+    double surprise = 5;
+    double disgust = 6;
+    double neutral = 7;
+}
+
+message PersonalityVector {
+    repeated double values = 1;  // 512-dim L2-normalized
+}
+
+message BehavioralFingerprint {
+    bytes hash = 1;           // SHA-256 of source data
+    int64 window_count = 2;   // number of text windows processed
+    int64 last_updated = 3;   // unix timestamp
+}
+
+message AvatarCapsule {
+    string avatar_id = 1;                  // anonymized UUID
+    PersonalityVector vector = 2;
+    BigFiveScores big_five = 3;
+    EmotionDistribution avg_emotion = 4;
+    BehavioralFingerprint fingerprint = 5;
+    string slm_endpoint = 6;               // Ollama endpoint for reasoning
+    int64 created_at = 7;
+    double drift_delta = 8;                // drift from previous vector
+}
+
+message PendingMatch {
+    string match_id = 1;
+    AvatarCapsule self_capsule = 2;
+    AvatarCapsule other_capsule = 3;
+    double compatibility_score = 4;
+    string anonymized_report = 5;
+    bool self_confirmed = 6;
+    bool other_confirmed = 7;
+    int64 created_at = 8;
+    int64 expires_at = 9;
+}

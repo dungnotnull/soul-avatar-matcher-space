@@ -1,0 +1,47 @@
+syntax = "proto3";
+
+package a2a;
+
+import "avatar.proto";
+
+service A2ADatingService {
+    rpc InitiateSession(InitiateRequest) returns (InitiateResponse);
+    rpc StreamDebate(stream DebateTurn) returns (stream DebateTurn);
+    rpc StreamFullDebate(InitiateRequest) returns (stream DebateTurn);
+    rpc SubmitMatchDecision(MatchDecision) returns (MatchResult);
+}
+
+message InitiateRequest {
+    avatar.AvatarCapsule self_capsule = 1;
+    avatar.AvatarCapsule peer_capsule = 2;
+    repeated string topic_ids = 3;
+    int32 max_rounds_per_topic = 4;
+}
+
+message InitiateResponse {
+    string session_id = 1;
+    bool accepted = 2;
+    string message = 3;
+}
+
+message DebateTurn {
+    string session_id = 1;
+    string topic_id = 2;
+    int32 round = 3;
+    string speaker_avatar_id = 4;
+    string content = 5;
+    bool is_final = 6;
+}
+
+message MatchDecision {
+    string session_id = 1;
+    string avatar_id = 2;
+    bool confirmed = 3;
+}
+
+message MatchResult {
+    string session_id = 1;
+    bool matched = 2;
+    string message = 3;
+    double compatibility_score = 4;
+}
